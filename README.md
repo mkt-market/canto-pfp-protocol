@@ -14,6 +14,15 @@ forge build
 forge test
 ```
 
+If OpenZeppelin libraries are required:
+```
+forge install OpenZeppelin/openzeppelin-contracts
+```
+And add the following line to `remappings.txt`:
+```
+openzeppelin/=lib/openzeppelin-contracts/contracts/
+```
+
 ## Features
 
 ### Testing Utilities
