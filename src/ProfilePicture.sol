@@ -10,7 +10,7 @@ contract ProfilePicture is ERC721 {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Data that is stored per PFP
-    struct ProfilePicturedata {
+    struct ProfilePictureData {
         /// @notice Reference to the NFT contract
         address nftContract;
         /// @notice Referenced nft ID
@@ -22,8 +22,8 @@ contract ProfilePicture is ERC721 {
     /// @notice Number of tokens minted
     uint256 public numMinted;
 
-    /// @notice Stores the bio value per NFT
-    mapping(uint256 => ProfilePicturedata) public pfp;
+    /// @notice Stores the pfp data per NFT
+    mapping(uint256 => ProfilePictureData) private pfp;
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
@@ -39,7 +39,8 @@ contract ProfilePicture is ERC721 {
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
     error TokenNotMinted(uint256 tokenID);
-    error NftNotOwnedByCaller(address caller, address nftContract, uint256 nftID);
+    error PFPNoLongerOwnedByOriginalOwner(uint256 tokenID);
+    error PFPNotOwnedByCaller(address caller, address nftContract, uint256 nftID);
 
     /// @notice Initiates CSR on mainnet
     constructor() ERC721("Profile Picture", "PFP") {
@@ -52,8 +53,11 @@ contract ProfilePicture is ERC721 {
 
     /// @notice Get the token URI for the specified _id
     /// @param _id ID to query for
+    /// @dev Reverts if PFP is no longer owned by original owner
     function tokenURI(uint256 _id) public view override returns (string memory) {
-        if (_ownerOf[_id] == address(0)) revert TokenNotMinted(_id);
+        (address nftContract, uint256 nftID) = getPFP(_id);
+        if (nftContract == address(0)) revert PFPNoLongerOwnedByOriginalOwner(_id);
+        return ERC721(nftContract).tokenURI(nftID);
     }
 
     /// @notice Mint a new PFP NFT
@@ -62,12 +66,27 @@ contract ProfilePicture is ERC721 {
     function mint(address _nftContract, uint256 _nftID) external {
         uint256 tokenId = ++numMinted;
         if (ERC721(_nftContract).ownerOf(_nftID) != msg.sender)
-            revert NftNotOwnedByCaller(msg.sender, _nftContract, _nftID);
-        ProfilePicturedata storage pictureData = pfp[tokenId];
+            revert PFPNotOwnedByCaller(msg.sender, _nftContract, _nftID);
+        ProfilePictureData storage pictureData = pfp[tokenId];
         pictureData.nftContract = _nftContract;
         pictureData.nftID = _nftID;
         pictureData.minter = msg.sender;
         _mint(msg.sender, tokenId);
         emit PfpAdded(msg.sender, tokenId, _nftContract, _nftID);
+    }
+
+    /// @notice Query the referenced profile picture
+    /// @dev Checks if the PFP is still owned by the original owner
+    /// @param _pfpID Profile picture NFT ID to query
+    /// @return nftContract The referenced NFT contract (address(0) if no longer owned), nftID The referenced NFT ID
+    function getPFP(uint256 _pfpID) public view returns (address nftContract, uint256 nftID) {
+        if (_ownerOf[_pfpID] == address(0)) revert TokenNotMinted(_pfpID);
+        ProfilePictureData storage pictureData = pfp[_pfpID];
+        nftContract = pictureData.nftContract;
+        nftID = pictureData.nftID;
+        if (ERC721(nftContract).ownerOf(nftID) != pictureData.minter) {
+            nftContract = address(0);
+            nftID = 0; // Strictly not needed because nftContract has to be always checked, but reset nevertheless to 0
+        }
     }
 }
