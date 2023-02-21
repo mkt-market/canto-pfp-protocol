@@ -66,7 +66,7 @@ contract ProfilePicture is ERC721 {
 
     /// @notice Get the token URI for the specified _id
     /// @param _id ID to query for
-    /// @dev Reverts if PFP is no longer owned by original owner
+    /// @dev Reverts if PFP is no longer owned by owner of associated CID NFT
     function tokenURI(uint256 _id) public view override returns (string memory) {
         (address nftContract, uint256 nftID) = getPFP(_id);
         if (nftContract == address(0)) revert PFPNoLongerOwnedByOriginalOwner(_id);
