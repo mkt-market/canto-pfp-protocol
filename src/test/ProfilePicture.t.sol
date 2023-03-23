@@ -150,6 +150,25 @@ contract ProfilePictureTest is DSTest {
         assertEq(nftID, 0);
     }
 
+    function testNFTBurnedAfterwardsNonCompliantNFT() public {
+        uint256 nftId = 1;
+
+        vm.startPrank(user1);
+        mockERC721.mint(user1, nftId);
+        pfp.mint(address(mockERC721), nftId);
+
+        mockCidNFT.mockReturnPrimaryCIDNFT(1);
+        mockCidNFT.addressRegistry().mockReturnAddress(address(0));
+        // Simulate a NFT that returns address(0) for ownerOf after burning (generally non-compliant, but sometimes happens)
+        mockERC721.overrideOwnerVar(address(0));
+
+        // since the NFT was burned, nftContract should be address(0)
+        (address nftContract, uint256 nftID) = pfp.getPFP(1);
+
+        assertEq(nftContract, address(0));
+        assertEq(nftID, 0);
+    }
+
     function testTokenURINFTOwnedByOwnerOfCIDNFT() public {
         uint256 nftId = 123;
 
