@@ -98,7 +98,8 @@ contract ProfilePicture is ERC721 {
         nftID = pictureData.nftID;
         uint256 cidNFTID = cidNFT.getPrimaryCIDNFT(subprotocolName, _pfpID);
         IAddressRegistry addressRegistry = cidNFT.addressRegistry();
-        if (cidNFTID == 0 || addressRegistry.getAddress(cidNFTID) != ERC721(nftContract).ownerOf(nftID)) {
+        address nftOwner = ERC721(nftContract).ownerOf(nftID);
+        if (cidNFTID == 0 || nftOwner == address(0) || addressRegistry.getAddress(cidNFTID) != nftOwner) {
             nftContract = address(0);
             nftID = 0; // Strictly not needed because nftContract has to be always checked, but reset nevertheless to 0
         }
