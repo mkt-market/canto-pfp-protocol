@@ -5,7 +5,7 @@ import {ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/ext
 import "../interface/Turnstile.sol";
 import "../interface/ICidNFT.sol";
 
-contract ProfilePicture is ERC721 {
+contract ProfilePicture is ERC721Enumerable {
     /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
