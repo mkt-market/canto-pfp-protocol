@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.0;
 
-import {ERC721} from "solmate/tokens/ERC721.sol";
+import {ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "../interface/Turnstile.sol";
 import "../interface/ICidNFT.sol";
 
@@ -92,7 +92,7 @@ contract ProfilePicture is ERC721 {
     /// @param _pfpID Profile picture NFT ID to query
     /// @return nftContract The referenced NFT contract (address(0) if no longer owned), nftID The referenced NFT ID
     function getPFP(uint256 _pfpID) public view returns (address nftContract, uint256 nftID) {
-        if (_ownerOf[_pfpID] == address(0)) revert TokenNotMinted(_pfpID);
+        if (!_exists(_pfpID)) revert TokenNotMinted(_pfpID);
         ProfilePictureData storage pictureData = pfp[_pfpID];
         nftContract = pictureData.nftContract;
         nftID = pictureData.nftID;
