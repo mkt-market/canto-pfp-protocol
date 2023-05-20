@@ -76,8 +76,8 @@ contract ProfilePicture is ERC721 {
     /// @notice Mint a new PFP NFT
     /// @param _nftContract The nft contract address to reference
     /// @param _nftID The nft ID to reference
-    function mint(address _nftContract, uint256 _nftID) external {
-        uint256 tokenId = ++numMinted;
+    function mint(address _nftContract, uint256 _nftID) external returns (uint256 tokenId) {
+        tokenId = ++numMinted;
         if (ERC721(_nftContract).ownerOf(_nftID) != msg.sender)
             revert PFPNotOwnedByCaller(msg.sender, _nftContract, _nftID);
         ProfilePictureData storage pictureData = pfp[tokenId];
