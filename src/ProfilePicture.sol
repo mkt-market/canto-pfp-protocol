@@ -2,12 +2,15 @@
 pragma solidity >=0.8.0;
 
 import {ERC721Enumerable, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "../interface/Turnstile.sol";
-import "../interface/ICidNFT.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Owned} from "solmate/auth/Owned.sol";
+import {Turnstile} from "../interface/Turnstile.sol";
+import {ICidNFT, IAddressRegistry} from "../interface/ICidNFT.sol";
+import {ICidSubprotocol} from "../interface/ICidSubprotocol.sol";
 
-contract ProfilePicture is ERC721Enumerable {
+contract ProfilePicture is ERC721Enumerable, Owned {
     /*//////////////////////////////////////////////////////////////
-                                 STATE
+                                 ADDRESSES
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Reference to the CID NFT
@@ -34,6 +37,12 @@ contract ProfilePicture is ERC721Enumerable {
     /// @notice Name with which the subprotocol is registered
     string public subprotocolName;
 
+    /// @notice Url of the docs
+    string public docs;
+
+    /// @notice Urls of the library
+    string[] private libraries;
+
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -43,6 +52,8 @@ contract ProfilePicture is ERC721Enumerable {
         address indexed referencedContract,
         uint256 referencedNftId
     );
+    event DocsChanged(string newDocs);
+    event LibChanged(string[] newLibs);
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -54,7 +65,7 @@ contract ProfilePicture is ERC721Enumerable {
     /// @notice Initiates CSR on mainnet
     /// @param _cidNFT Address of the CID NFT
     /// @param _subprotocolName Name with which the subprotocol is / will be registered in the registry. Registration will not be performed automatically
-    constructor(address _cidNFT, string memory _subprotocolName) ERC721("Profile Picture", "PFP") {
+    constructor(address _cidNFT, string memory _subprotocolName) ERC721("Profile Picture", "PFP") Owned(msg.sender) {
         cidNFT = ICidNFT(_cidNFT);
         subprotocolName = _subprotocolName;
         if (block.chainid == 7700 || block.chainid == 7701) {
@@ -96,12 +107,76 @@ contract ProfilePicture is ERC721Enumerable {
         ProfilePictureData storage pictureData = pfp[_pfpID];
         nftContract = pictureData.nftContract;
         nftID = pictureData.nftID;
-        uint256 cidNFTID = cidNFT.getPrimaryCIDNFT(subprotocolName, _pfpID);
-        IAddressRegistry addressRegistry = cidNFT.addressRegistry();
+        (uint256 cidNFTID, address cidNFTRegisteredAddress) = _getAssociatedCIDAndOwner(_pfpID);
         address nftOwner = ERC721(nftContract).ownerOf(nftID);
-        if (cidNFTID == 0 || nftOwner == address(0) || addressRegistry.getAddress(cidNFTID) != nftOwner) {
+        if (cidNFTID == 0 || nftOwner == address(0) || cidNFTRegisteredAddress != nftOwner) {
             nftContract = address(0);
             nftID = 0; // Strictly not needed because nftContract has to be always checked, but reset nevertheless to 0
         }
+    }
+
+    /// @notice Get the associated CID NFT ID and the address that has registered this CID (if any)
+    /// @param _subprotocolNFTID ID of the subprotocol NFT to query
+    /// @return cidNFTID The CID NFT ID, cidNFTRegisteredAddress The registered address
+    function _getAssociatedCIDAndOwner(uint256 _subprotocolNFTID)
+        internal
+        view
+        returns (uint256 cidNFTID, address cidNFTRegisteredAddress)
+    {
+        cidNFTID = cidNFT.getPrimaryCIDNFT(subprotocolName, _subprotocolNFTID);
+        IAddressRegistry addressRegistry = cidNFT.addressRegistry();
+        cidNFTRegisteredAddress = addressRegistry.getAddress(cidNFTID);
+    }
+
+    /// @notice Get the subprotocol metadata that is associated with a subprotocol NFT
+    /// @param _tokenID The NFT to query
+    /// @return Subprotocol metadata as JSON
+    function metadata(uint256 _tokenID) external view returns (string memory) {
+        if (!_exists(_tokenID)) revert TokenNotMinted(_tokenID);
+        (address nftContract, uint256 nftID) = getPFP(_tokenID);
+        string memory subprotocolData = string.concat(
+            '"nftContract": "',
+            Strings.toHexString(uint160(nftContract), 20),
+            '", "nftID": ',
+            Strings.toString(nftID)
+        );
+        (uint256 cidNFTID, address cidNFTRegisteredAddress) = _getAssociatedCIDAndOwner(_tokenID);
+        string memory json = string.concat(
+            "{",
+            '"subprotocolName": "',
+            subprotocolName,
+            '",',
+            '"associatedCidToken":',
+            Strings.toString(cidNFTID),
+            ",",
+            '"associatedCidAddress": "',
+            Strings.toHexString(uint160(cidNFTRegisteredAddress), 20),
+            '",',
+            '"subprotocolData": {',
+            subprotocolData,
+            "}",
+            "}"
+        );
+        return json;
+    }
+
+    /// @notice Return the libraries / SDKs of the subprotocol (if any)
+    /// @return Location of the subprotocol library
+    function lib() external view returns (string[] memory) {
+        return libraries;
+    }
+
+    /// @notice Change the docs url
+    /// @param _newDocs New docs url
+    function changeDocs(string memory _newDocs) external onlyOwner {
+        docs = _newDocs;
+        emit DocsChanged(_newDocs);
+    }
+
+    /// @notice Change the lib urls
+    /// @param _newLibs New lib urls
+    function changeLib(string[] memory _newLibs) external onlyOwner {
+        libraries = _newLibs;
+        emit LibChanged(_newLibs);
     }
 }
