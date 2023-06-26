@@ -31,6 +31,9 @@ contract ProfilePicture is ERC721Enumerable, Owned {
     /// @notice Number of tokens minted
     uint256 public numMinted;
 
+    /// @notice Whether minting is enabled
+    bool public mintingEnabled = true;
+
     /// @notice Stores the pfp data per NFT
     mapping(uint256 => ProfilePictureData) private pfp;
 
@@ -61,6 +64,7 @@ contract ProfilePicture is ERC721Enumerable, Owned {
     error TokenNotMinted(uint256 tokenID);
     error PFPNoLongerOwnedByOriginalOwner(uint256 tokenID);
     error PFPNotOwnedByCaller(address caller, address nftContract, uint256 nftID);
+    error MintingDisabled();
 
     /// @notice Initiates CSR on mainnet
     /// @param _cidNFT Address of the CID NFT
@@ -88,6 +92,7 @@ contract ProfilePicture is ERC721Enumerable, Owned {
     /// @param _nftContract The nft contract address to reference
     /// @param _nftID The nft ID to reference
     function mint(address _nftContract, uint256 _nftID) external {
+        if (!mintingEnabled) revert MintingDisabled();
         uint256 tokenId = ++numMinted;
         if (ERC721(_nftContract).ownerOf(_nftID) != msg.sender)
             revert PFPNotOwnedByCaller(msg.sender, _nftContract, _nftID);
@@ -184,5 +189,11 @@ contract ProfilePicture is ERC721Enumerable, Owned {
     /// @param _subprotocolName New subprotocol name
     function changeSubprotocolName(string memory _subprotocolName) external onlyOwner {
         subprotocolName = _subprotocolName;
+    }
+
+    /// @notice Enable or disable minting
+    /// @param _mintingEnabled New value for toggle
+    function setMintingEnabled(bool _mintingEnabled) external onlyOwner {
+        mintingEnabled = _mintingEnabled;
     }
 }
