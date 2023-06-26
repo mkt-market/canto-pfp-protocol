@@ -179,4 +179,10 @@ contract ProfilePicture is ERC721Enumerable, Owned {
         libraries = _newLibs;
         emit LibChanged(_newLibs);
     }
+
+    /// @notice Change the reference to the subprotocol name
+    /// @param _subprotocolName New subprotocol name
+    function changeSubprotocolName(string memory _subprotocolName) external onlyOwner {
+        subprotocolName = _subprotocolName;
+    }
 }
