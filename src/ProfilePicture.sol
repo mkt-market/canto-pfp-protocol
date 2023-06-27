@@ -35,7 +35,7 @@ contract ProfilePicture is ERC721Enumerable, Owned {
     bool public mintingEnabled = true;
 
     /// @notice Stores the pfp data per NFT
-    mapping(uint256 => ProfilePictureData) private pfp;
+    mapping(uint256 => ProfilePictureData) public pfp;
 
     /// @notice Name with which the subprotocol is registered
     string public subprotocolName;

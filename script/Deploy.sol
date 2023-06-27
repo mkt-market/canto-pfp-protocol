@@ -5,8 +5,8 @@ import "forge-std/Script.sol";
 import "../src/ProfilePicture.sol";
 
 contract DeploymentScript is Script {
-    address constant CID = address(0x8eD389F3F0934396eefCA08c685E2eC68C49D993); // TODO
-    string subprotocolName = "profilepic";
+    address constant CID = address(0x6efd43c49dA92f77d890FD8c27F1f23f7Aa0970A);
+    string subprotocolName = "profilepicture";
 
     function setUp() public {}
 
